@@ -1,49 +1,45 @@
-from typing import Literal
+from typing import Literal, TypedDict
+
+from langgraph.graph import END, START, StateGraph
 
 
-def decide_route(input_text: str) -> Literal["refund", "support", "general"]:
-    """Simple conditional routing logic."""
-    text = input_text.lower()
-
-    if "refund" in text or "return" in text:
-        return "refund"
-    if "billing" in text or "charge" in text or "payment" in text:
-        return "support"
-    return "general"
+class LoanState(TypedDict):
+    income: float
+    decision: str
 
 
-def refund_handler() -> str:
-    return "Process refund request and check payment details."
+def routing(state: LoanState) -> Literal["approve", "reject"]:
+    if state["income"] < 75000:
+        return "reject"
+    return "approve"
 
 
-def support_handler() -> str:
-    return "Connect to support team and review billing issue."
+def loan_approved(state: LoanState) -> dict[str, str]:
+    return {
+        "decision": f"Loan approved successfully for income: {state['income']}"
+    }
 
 
-def general_handler() -> str:
-    return "Provide general assistance and answer the user query."
+def loan_rejected(state: LoanState) -> dict[str, str]:
+    return {
+        "decision": f"Loan rejected for income: {state['income']}"
+    }
 
 
-def workflow(user_message: str) -> str:
-    """Run a conditional workflow based on user intent."""
-    route = decide_route(user_message)
+graph = StateGraph(LoanState)
+graph.add_node("approve", loan_approved)
+graph.add_node("reject", loan_rejected)
 
-    if route == "refund":
-        return refund_handler()
-    if route == "support":
-        return support_handler()
-    return general_handler()
+graph.add_conditional_edges(START, routing)
+graph.add_edge("approve", END)
+graph.add_edge("reject", END)
 
+workflow = graph.compile()
 
-if __name__ == "__main__":
-    samples = [
-        "I want a refund for my order",
-        "My charge is incorrect",
-        "Tell me about your product",
-    ]
+initial_state: LoanState = {
+    "income": 25000.0,
+    "decision": "",
+}
 
-    for sample in samples:
-        print(f"User: {sample}")
-        print(f"Route: {decide_route(sample)}")
-        print(f"Result: {workflow(sample)}")
-        print("-" * 40)
+final_state = workflow.invoke(initial_state)
+print(final_state)

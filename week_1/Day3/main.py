@@ -60,5 +60,5 @@ initial_state: MyBank = {
 final_state = workflow.invoke(initial_state)
 print(final_state)
     
-from IPython.display import Image
-Image(workflow.get_graph().draw_mermaid_png())
+# from IPython.display import Image
+# Image(workflow.get_graph().draw_mermaid_png())
